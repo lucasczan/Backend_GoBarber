@@ -1,10 +1,11 @@
 /* eslint-disable consistent-return */
 import { Router } from 'express';
 import { parseISO } from 'date-fns';
+
 import { getCustomRepository } from 'typeorm';
-import CreateAppointmentService from '../services/CreateAppointmentService';
-import AppointmentsReposiotry from '../Repositories/AppointmentsRepository';
-import ensureAuthenticated from '../middlewares/EnsureAuthenticated';
+import AppointmentsReposiotry from '@modules/appointments/repositories/AppointmentsRepository';
+import CreateAppointmentService from '@modules/appointments/services/CreateAppointmentService';
+import ensureAuthenticated from '@modules/users/infra/http/middlewares/EnsureAuthenticated';
 
 const appointmentsRouter = Router();
 appointmentsRouter.use(ensureAuthenticated);

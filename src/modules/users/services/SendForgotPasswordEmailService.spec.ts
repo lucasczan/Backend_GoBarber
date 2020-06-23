@@ -3,20 +3,30 @@ import FakeMailProvider from '@shared/container/providers/MailProvider/fakes/Fak
 
 import FakeUserRepository from '../repositories/fakes/FakeUserRepository'
 import SendForgotPasswordEmailService from './SendForgotPasswordEmailService'
+import FakeUserTokensRepository from '../repositories/fakes/FakeUserTokensRepositoy';
+
+let fakeUserRepository: FakeUserRepository;
+let fakeMailProvider: FakeMailProvider;
+let fakeUserTokensRepository: FakeUserTokensRepository;
+let sendForgotPasswordEmail: SendForgotPasswordEmailService;
 
 describe('SendForgotPasswordEmail', () => {
-  it('should be able to recover the password using the email', async () => {
-    const fakeUserRepository = new FakeUserRepository();
-    const fakeMailProvider = new FakeMailProvider();
+  beforeEach(() => {
+    fakeUserRepository = new FakeUserRepository();
+    fakeMailProvider = new FakeMailProvider();
+    fakeUserTokensRepository = new FakeUserTokensRepository();
 
-    const sendForgotPasswordEmail = new SendForgotPasswordEmailService(
+    sendForgotPasswordEmail = new SendForgotPasswordEmailService(
       fakeUserRepository,
       fakeMailProvider,
+      fakeUserTokensRepository,
     );
+  })
 
+  it('should be able to recover the password using the email', async () => {
     const sendMail = jest.spyOn(fakeMailProvider, 'sendMail');
 
-    const user = await fakeUserRepository.create({
+    await fakeUserRepository.create({
       name: 'John Doe',
       email: 'johndoe@example.com',
       password: '123456',
@@ -27,4 +37,26 @@ describe('SendForgotPasswordEmail', () => {
 
     expect(sendMail).toHaveBeenCalled();
   });
+
+  it('should not be able to recover a non-existing user password', async () => {
+    await expect(sendForgotPasswordEmail.execute({
+      email: 'johndoe@example.com',
+    })).rejects.toBeInstanceOf(AppError);
+  })
+
+  it('should generate a forgot password token', async () => {
+    const generatedRoken = jest.spyOn(fakeUserTokensRepository, 'generate');
+
+    const user = await fakeUserRepository.create({
+      name: 'John Doe',
+      email: 'johndoe@example.com',
+      password: '123456',
+    });
+
+    await sendForgotPasswordEmail.execute({
+      email: 'johndoe@example.com',
+    });
+
+    expect(generatedRoken).toHaveBeenCalledWith(user.id);
+  })
 })
